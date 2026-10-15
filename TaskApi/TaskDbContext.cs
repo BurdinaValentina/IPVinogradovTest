@@ -15,7 +15,6 @@ public class TaskDbContext : DbContext
     {
         base.OnConfiguring(optionsBuilder);
 
-        // Проверяем, используется ли Npgsql провайдер
         _isNpgsql = optionsBuilder.Options.Extensions
             .Any(e => e is NpgsqlOptionsExtension);
     }
@@ -24,11 +23,8 @@ public class TaskDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Применяем Xmin ТОЛЬКО для реляционных баз (PostgreSQL). 
-        // Для InMemory (в тестах) это условие false, и EF Core не упадет.
         if (_isNpgsql)
         {
-            // Настраиваем Xmin как concurrency token для оптимистичной блокировки
             modelBuilder.Entity<TaskItem>()
             .Property(t => t.Xmin)
             .IsRowVersion();

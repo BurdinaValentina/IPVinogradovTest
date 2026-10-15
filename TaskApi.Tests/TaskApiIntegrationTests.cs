@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions; // КРИТИЧЕСКИ ВАЖНО для RemoveAll!
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using NUnit.Framework;
 using System.Net;
 using System.Net.Http.Json;
@@ -30,12 +30,10 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        // 1. ЭТО КРИТИЧЕСКИ ВАЖНО: задаём окружение ДО того, как сработает Program.cs
         builder.UseEnvironment("Testing");
 
         builder.ConfigureTestServices(services =>
         {
-            // 2. На всякий случай удаляем, если вдруг проскочило
             var dbContextDescriptor = services.SingleOrDefault(
                 d => d.ServiceType == typeof(DbContextOptions<TaskDbContext>));
 
@@ -44,11 +42,9 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
                 services.Remove(dbContextDescriptor);
             }
 
-            // 3. Добавляем InMemory
             services.AddDbContext<TaskDbContext>(options =>
                 options.UseInMemoryDatabase("TestDb"));
 
-            // 4. Заменяем RabbitMQ на мок
             services.Replace(ServiceDescriptor.Singleton<IRabbitMqPublisher>(MockRabbitMq));
         });
     }

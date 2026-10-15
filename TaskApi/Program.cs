@@ -3,14 +3,12 @@ using TaskApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. PostgreSQL (в тестах будет перехвачен и заменён на InMemory)
 if (builder.Environment.EnvironmentName != "Testing")
 {
     builder.Services.AddDbContext<TaskDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 }
 
-// 2. RabbitMQ
 builder.Services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
 builder.Services.AddHostedService<RabbitMqShutdownService>();
 
