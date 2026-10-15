@@ -16,7 +16,7 @@ var app = builder.Build();
 
 // === API Endpoints ===
 
-// POST /tasks Ч создание задачи
+// POST /tasks Ч create task
 app.MapPost("/tasks", async (CreateTaskRequest req, TaskDbContext db) =>
 {
     if (string.IsNullOrWhiteSpace(req.Title) || req.Title.Length > 200)
@@ -39,14 +39,14 @@ app.MapPost("/tasks", async (CreateTaskRequest req, TaskDbContext db) =>
     return Results.Created($"/tasks/{task.Id}", task);
 });
 
-// GET /tasks Ч получить все задачи
+// GET /tasks Ч get all tasks
 app.MapGet("/tasks", async (TaskDbContext db) =>
 {
     var tasks = await db.Tasks.ToListAsync();
     return Results.Ok(tasks);
 });
 
-// PUT /tasks/{id}/complete Ч завершить задачу
+// PUT /tasks/{id}/complete complete task
 app.MapPut("/tasks/{id:guid}/complete", async (Guid id, TaskDbContext db, IRabbitMqPublisher rabbitMq, ILogger<Program> logger) =>
 {
     var task = await db.Tasks.FindAsync(id);
@@ -55,7 +55,6 @@ app.MapPut("/tasks/{id:guid}/complete", async (Guid id, TaskDbContext db, IRabbi
         return Results.NotFound();
     }
 
-    // Ѕыстра€ проверка на уровне приложени€ (работает и в тестах, и в проде)
     if (task.IsCompleted)
     {
         return Results.Conflict("Task is already completed");
@@ -66,7 +65,6 @@ app.MapPut("/tasks/{id:guid}/complete", async (Guid id, TaskDbContext db, IRabbi
 
     try
     {
-        // Ќадежна€ проверка на уровне Ѕƒ через xmin (только в PostgreSQL)
         await db.SaveChangesAsync();
     }
     catch (DbUpdateConcurrencyException)
@@ -75,7 +73,6 @@ app.MapPut("/tasks/{id:guid}/complete", async (Guid id, TaskDbContext db, IRabbi
         return Results.Conflict("Task was already modified or completed by another request");
     }
 
-    // ѕубликуем в RabbitMQ ѕќ—Ћ≈ успешного сохранени€ в Ѕƒ
     _ = Task.Run(async () =>
     {
         var evt = new TaskCompletedEvent(task.Id, task.Title, task.CompletedAt.Value, task.Priority);
@@ -85,7 +82,7 @@ app.MapPut("/tasks/{id:guid}/complete", async (Guid id, TaskDbContext db, IRabbi
     return Results.Ok(task);
 });
 
-// DELETE /tasks/{id} Ч удалить задачу
+// DELETE /tasks/{id} Ч delete task
 app.MapDelete("/tasks/{id:guid}", async (Guid id, TaskDbContext db) =>
 {
     var task = await db.Tasks.FindAsync(id);
@@ -102,5 +99,5 @@ app.MapDelete("/tasks/{id:guid}", async (Guid id, TaskDbContext db) =>
 
 app.Run();
 
-// ќб€зательно дл€ WebApplicationFactory<Program> в тестах
+// For WebApplicationFactory<Program> in tests
 public partial class Program { }

@@ -17,7 +17,7 @@ public class TaskItem
     public DateTimeOffset? CompletedAt { get; set; }
     public Priority Priority { get; set; } = Priority.Medium;
 
-    // Системная колонка PostgreSQL для оптимистичной блокировки
+    // System column PostgreSQL for optimistic lock
     public uint Xmin { get; set; }
 }
 
